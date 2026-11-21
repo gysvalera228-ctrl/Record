@@ -1,0 +1,16 @@
+{
+    "geode": "6.0.0-beta.1",
+    "gd": {
+        "android": "2.2091"
+    },
+    "id": "maxim.record",
+    "name": "Record",
+    "version": "1.0.0",
+    "developer": "Maxim",
+    "description": "In-game Geometry Dash video recorder for Android.",
+    "tags": [
+        "utility",
+        "gameplay"
+    ],
+    "dependencies": {}
+}

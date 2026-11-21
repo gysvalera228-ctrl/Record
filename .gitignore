@@ -1,0 +1,6 @@
+build/
+build-*/
+geode-sdk-clone/
+cpm-cache/
+*.so
+*.o
