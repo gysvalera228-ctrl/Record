@@ -34,4 +34,30 @@ if(ANDROID)
         ${GLES_LIB}
         ${DL_LIB}
     )
+
+    if(NOT DEFINED ENV{FFMPEG_ROOT})
+        message(FATAL_ERROR "FFMPEG_ROOT is not defined")
+    endif()
+
+    set(FFMPEG_ROOT "$ENV{FFMPEG_ROOT}")
+
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${FFMPEG_ROOT}/include"
+    )
+
+    target_link_libraries(${PROJECT_NAME}
+        "${FFMPEG_ROOT}/lib/libavformat.a"
+        "${FFMPEG_ROOT}/lib/libavcodec.a"
+        "${FFMPEG_ROOT}/lib/libswscale.a"
+        "${FFMPEG_ROOT}/lib/libswresample.a"
+        "${FFMPEG_ROOT}/lib/libavutil.a"
+        mediandk
+        android
+        log
+        jnigraphics
+        z
+        m
+        dl
+    )
+
 endif()

@@ -12,7 +12,69 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Android64
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "ndk;29.0.14206865"
+
+      - name: Build FFmpeg ARM64
+        shell: bash
+        run: |
+          set -e
+
+          export NDK="${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/29.0.14206865}"
+          export TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
+          export PREFIX="$GITHUB_WORKSPACE/ffmpeg-install"
+
+          git clone --depth 1 --branch n7.1.1 \
+            https://github.com/FFmpeg/FFmpeg.git ffmpeg-src
+
+          cd ffmpeg-src
+
+          ./configure \
+            --prefix="$PREFIX" \
+            --target-os=android \
+            --arch=aarch64 \
+            --cpu=armv8-a \
+            --enable-cross-compile \
+            --sysroot="$TOOLCHAIN/sysroot" \
+            --cc="$TOOLCHAIN/bin/aarch64-linux-android23-clang" \
+            --cxx="$TOOLCHAIN/bin/aarch64-linux-android23-clang++" \
+            --ar="$TOOLCHAIN/bin/llvm-ar" \
+            --ranlib="$TOOLCHAIN/bin/llvm-ranlib" \
+            --strip="$TOOLCHAIN/bin/llvm-strip" \
+            --enable-static \
+            --disable-shared \
+            --enable-pic \
+            --disable-programs \
+            --disable-doc \
+            --disable-debug \
+            --disable-network \
+            --disable-autodetect \
+            --disable-everything \
+            --enable-avcodec \
+            --enable-avformat \
+            --enable-avutil \
+            --enable-swscale \
+            --enable-swresample \
+            --enable-jni \
+            --enable-mediacodec \
+            --enable-encoder=h264_mediacodec \
+            --enable-encoder=aac \
+            --enable-muxer=mp4 \
+            --enable-protocol=file \
+            --enable-parser=aac \
+            --enable-bsf=aac_adtstoasc
+
+          make -j2
+          make install
+
+          echo "FFMPEG_ROOT=$PREFIX" >> "$GITHUB_ENV"
+
+      - name: Build Record Android64
         id: build
         uses: geode-sdk/build-geode-mod@main
         with:
