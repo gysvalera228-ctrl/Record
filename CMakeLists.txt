@@ -24,6 +24,7 @@ if(ANDROID)
     find_library(LOG_LIB log)
     find_library(EGL_LIB EGL)
     find_library(GLES_LIB GLESv2)
+    find_library(DL_LIB dl)
 
     target_link_libraries(${PROJECT_NAME}
         ${ANDROID_LIB}
@@ -31,5 +32,6 @@ if(ANDROID)
         ${LOG_LIB}
         ${EGL_LIB}
         ${GLES_LIB}
+        ${DL_LIB}
     )
 endif()

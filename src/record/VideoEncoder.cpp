@@ -6,8 +6,33 @@
 
 #include <chrono>
 #include <cstring>
+#include <dlfcn.h>
 
 namespace record {
+
+using CreateInputSurfaceFn =
+    media_status_t (*)(AMediaCodec*, ANativeWindow**);
+
+using SignalEndOfInputStreamFn =
+    media_status_t (*)(AMediaCodec*);
+
+static void* getMediaNdkHandle() {
+    static void* handle = dlopen("libmediandk.so", RTLD_NOW);
+    return handle;
+}
+
+static CreateInputSurfaceFn getCreateInputSurface() {
+    return reinterpret_cast<CreateInputSurfaceFn>(
+        dlsym(getMediaNdkHandle(), "AMediaCodec_createInputSurface")
+    );
+}
+
+static SignalEndOfInputStreamFn getSignalEndOfInputStream() {
+    return reinterpret_cast<SignalEndOfInputStreamFn>(
+        dlsym(getMediaNdkHandle(), "AMediaCodec_signalEndOfInputStream")
+    );
+}
+
 
 static bool makeDirectories(const std::string& path) {
     std::string current;
@@ -109,7 +134,15 @@ bool VideoEncoder::start(
         return false;
     }
 
-    status = AMediaCodec_createInputSurface(m_codec, &m_surface);
+    auto createSurface = getCreateInputSurface();
+
+    if (!createSurface) {
+        m_error = "Input surface requires Android API 26 or newer";
+        stop();
+        return false;
+    }
+
+    status = createSurface(m_codec, &m_surface);
 
     if (status != AMEDIA_OK || !m_surface) {
         m_error = "Cannot create encoder input surface";
@@ -241,7 +274,12 @@ void VideoEncoder::drainLoop() {
 void VideoEncoder::stop() {
     if (m_codec && m_running) {
         m_stopping = true;
-        AMediaCodec_signalEndOfInputStream(m_codec);
+        auto signalEOS = getSignalEndOfInputStream();
+
+        if (signalEOS)
+            signalEOS(m_codec);
+        else
+            m_error = "Encoder EOS API is unavailable";
     }
 
     if (m_thread.joinable())
